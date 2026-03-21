@@ -1,0 +1,27 @@
+{
+  "name": "tehprof-support",
+  "display_name": "TehProf Support",
+  "description": "AI-powered helpdesk & ticket management platform. Manage support tickets, knowledge base, analytics, CRM integrations (Bitrix24) via MCP. Free tier with 9 tools, paid tiers up to 28 tools.",
+  "repository": "https://github.com/tehprof/support-mcp",
+  "homepage": "https://support.tehprof.kz",
+  "transport": {
+    "type": "streamable-http",
+    "url": "https://support.tehprof.kz/mcp"
+  },
+  "server_card_url": "https://support.tehprof.kz/.well-known/mcp.json",
+  "authentication": {
+    "type": "bearer",
+    "description": "API key from admin panel. Anonymous access available for free-tier tools."
+  },
+  "version": "1.0.0",
+  "categories": ["business", "helpdesk", "crm", "customer-support"],
+  "tags": ["tickets", "helpdesk", "support", "bitrix24", "saas", "analytics", "whatsapp", "telegram"],
+  "tools_count": 28,
+  "free_tools": 9,
+  "languages": ["en", "ru", "kk"],
+  "author": {
+    "name": "TehProf",
+    "url": "https://tehprof.kz",
+    "email": "support@tehprof.kz"
+  }
+}

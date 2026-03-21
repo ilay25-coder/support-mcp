@@ -1,0 +1,26 @@
+name: tehprof-support
+displayName: TehProf Support
+description: AI-powered helpdesk & ticket management. Manage support tickets, knowledge base, analytics, CRM integrations via MCP. Free tier available.
+icon: https://support.tehprof.kz/logo-dark.png
+sourceUrl: https://github.com/tehprof/support-mcp
+transport:
+  type: streamableHttp
+  url: https://support.tehprof.kz/mcp
+auth:
+  type: bearer
+  description: API key from Support admin panel. Anonymous access provides free-tier tools.
+categories:
+  - business
+  - helpdesk
+  - crm
+  - customer-support
+tags:
+  - tickets
+  - helpdesk
+  - support
+  - bitrix24
+  - saas
+  - analytics
+  - multi-channel
+  - whatsapp
+  - telegram
