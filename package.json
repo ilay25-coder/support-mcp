@@ -1,5 +1,5 @@
 {
-  "name": "@tehprof/support-mcp",
+  "name": "tehprof-support-mcp",
   "version": "1.0.0",
   "description": "MCP Server for TehProf Support — AI-powered helpdesk management",
   "type": "module",

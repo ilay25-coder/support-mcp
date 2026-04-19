@@ -1,5 +1,14 @@
 # Support MCP Server — CLAUDE.md
 
+## ⛔ ГЛОБАЛЬНЫЕ ПРАВИЛА (подробности → /srv/CLAUDE.md)
+> **#0 Ошибки первым делом** — проверить ошибки ПЕРЕД любой задачей + `bash /root/.claude/hooks/guardian-check.sh`
+> **#1 Автоклассификация** — вопрос / любое изменение=architect-first / крупное=волны (категорий "мелкий"/"средний" НЕТ) + чеклисты до и после кода
+> **#2 Auto-Skills** — hook подсказал Skill → вызвать Skill tool (security, perf, pipeline, qa...)
+> **TOOL USAGE** — MCP (docker, postgres, redis, playwright, context7) вместо Bash
+> **Самоочистка** — удалять temp файлы после задачи
+> **Размер файлов** — Backend: 400 | Frontend: 350 | CSS: 250 строк
+> **Новый сервис** → `/master-architect` обязательно
+
 ## Назначение
 MCP (Model Context Protocol) сервер для TehProf Support.
 Позволяет любому AI-клиенту (Claude, GPT, Gemini) управлять системой поддержки через стандартный протокол.

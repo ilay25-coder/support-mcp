@@ -5,8 +5,9 @@
  * Auth: Bearer API key → validates against Support backend.
  * Anonymous access: free-tier tools (knowledge, onboarding, demo, pricing).
  */
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
+import { ListToolsRequestSchema, CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { createServer, type IncomingMessage, type ServerResponse } from 'http';
 import { extractBearerToken, validateApiKey, ANONYMOUS_CONTEXT } from './auth.js';
 import { getToolsForTier, executeTool } from './tool-registry.js';
@@ -28,34 +29,59 @@ import './tools/bitrix/proxy.js';
 const PORT = parseInt(process.env.MCP_PORT || '8101', 10);
 const HOST = process.env.MCP_HOST || '127.0.0.1';
 
-/** Active sessions mapped by session ID */
-const sessions = new Map<string, { transport: StreamableHTTPServerTransport; auth: AuthContext }>();
+/** Active sessions mapped by session ID (with TTL) */
+const SESSION_TTL_MS = 60 * 60 * 1000; // 1 hour inactivity timeout
+const sessions = new Map<string, { transport: StreamableHTTPServerTransport; auth: AuthContext; lastActive: number }>();
 
-/** Create a new MCP server instance for a session */
-function createMcpServer(auth: AuthContext): McpServer {
-  const server = new McpServer({
+// Evict stale sessions every 5 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [sid, session] of sessions) {
+    if (now - session.lastActive > SESSION_TTL_MS) {
+      session.transport.close?.();
+      sessions.delete(sid);
+    }
+  }
+}, 5 * 60 * 1000);
+
+/** Create a low-level Server instance with raw JSON Schema support */
+function createMcpServer(auth: AuthContext): Server {
+  const server = new Server({
     name: 'TehProf Support',
     version: '1.0.0',
+  }, {
+    capabilities: { tools: { listChanged: true } },
   });
 
-  // Register tools dynamically based on tier
-  const toolDefs = getToolsForTier(auth.tenantPlan);
-  for (const tool of toolDefs) {
-    server.tool(
-      tool.name,
-      tool.description,
-      async (args: Record<string, unknown>) => {
-        return executeTool(tool.name, args, auth) as never;
-      }
-    );
-  }
+  // tools/list — return all tools with JSON Schema inputSchema
+  server.setRequestHandler(ListToolsRequestSchema, async () => {
+    const toolDefs = getToolsForTier(auth.tenantPlan);
+    return {
+      tools: toolDefs.map(t => ({
+        name: t.name,
+        description: t.description,
+        inputSchema: t.inputSchema || { type: 'object' as const, properties: {} },
+      })),
+    };
+  });
+
+  // tools/call — execute tool with raw arguments (no Zod validation)
+  server.setRequestHandler(CallToolRequestSchema, async (request) => {
+    const { name, arguments: args } = request.params;
+    return executeTool(name, args || {}, auth);
+  });
 
   return server;
 }
 
+const ALLOWED_ORIGINS = ['https://support.tehprof.kz', 'https://claude.ai', 'https://chat.openai.com'];
+
 /** Handle CORS preflight */
-function handleCors(res: ServerResponse): void {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+function handleCors(req: IncomingMessage, res: ServerResponse): void {
+  const origin = req.headers.origin || '';
+  if (ALLOWED_ORIGINS.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, MCP-Session-Id, MCP-Protocol-Version');
   res.setHeader('Access-Control-Expose-Headers', 'MCP-Session-Id');
@@ -73,7 +99,7 @@ function readBody(req: IncomingMessage): Promise<string> {
 
 /** Main HTTP handler */
 async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
-  handleCors(res);
+  handleCors(req, res);
 
   // CORS preflight
   if (req.method === 'OPTIONS') {
@@ -125,15 +151,16 @@ async function handler(req: IncomingMessage, res: ServerResponse): Promise<void>
 
   if (req.method === 'POST') {
     if (sessionId && sessions.has(sessionId)) {
-      // Existing session
+      // Existing session — update last active timestamp
       const session = sessions.get(sessionId)!;
+      session.lastActive = Date.now();
       await session.transport.handleRequest(req, res);
     } else {
       // New session
       const transport = new StreamableHTTPServerTransport({
         sessionIdGenerator: () => crypto.randomUUID(),
         onsessioninitialized: (sid) => {
-          sessions.set(sid, { transport, auth });
+          sessions.set(sid, { transport, auth, lastActive: Date.now() });
         },
       });
 

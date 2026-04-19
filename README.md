@@ -146,7 +146,7 @@ Get your API key from the Support admin panel:
 - **MCP Endpoint**: https://support.tehprof.kz/mcp
 - **Server Card**: https://support.tehprof.kz/.well-known/mcp.json
 - **Knowledge Base**: https://support.tehprof.kz/help
-- **Bitrix24 Marketplace**: https://www.bitrix24.kz/apps/app/tehprof.support/
+- **Bitrix24 Marketplace**: https://www.bitrix24.kz/apps/app/tekhprof.app2/
 
 ## License
 
